@@ -10,30 +10,9 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static('public'));
 
-// Debug endpoint - list all env var names (not values)
-app.get('/api/debug-env', (req, res) => {
-  const envVarNames = Object.keys(process.env).sort();
-  const hasAnthropicKey = 'ANTHROPIC_API_KEY' in process.env;
-  res.json({
-    totalVars: envVarNames.length,
-    hasAnthropicKey,
-    varNames: envVarNames
-  });
-});
-
-// Debug: log API key details
-const apiKey = process.env.ANTHROPIC_API_KEY;
-console.log('ANTHROPIC_API_KEY present:', !!apiKey);
-console.log('ANTHROPIC_API_KEY length:', apiKey?.length || 0);
-console.log('ANTHROPIC_API_KEY starts with:', apiKey?.substring(0, 12) || 'undefined');
-console.log('ANTHROPIC_API_KEY type:', typeof apiKey);
-
-if (!apiKey || apiKey.trim() === '') {
-  console.error('ERROR: ANTHROPIC_API_KEY is empty or not set!');
-}
 
 const anthropic = new Anthropic({
-  apiKey: apiKey,
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 // Email transporter configuration
