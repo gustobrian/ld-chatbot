@@ -285,7 +285,7 @@ app.post('/api/chat', async (req, res) => {
     let fullMessage = '';
 
     const stream = await anthropic.messages.stream({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: session.messages
@@ -333,7 +333,7 @@ app.post('/api/greeting', async (req, res) => {
     let fullMessage = '';
 
     const stream = await anthropic.messages.stream({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: 'Hello, I want to submit a training request.' }]
@@ -393,7 +393,7 @@ Format the document professionally with clear section headers. Use markdown form
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
       messages: [
         ...session.messages,
