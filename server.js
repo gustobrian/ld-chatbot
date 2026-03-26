@@ -260,7 +260,7 @@ app.post('/api/session', (req, res) => {
   res.json({ sessionId });
 });
 
-// Send a message and get a response
+// Send a message and get a streaming response
 app.post('/api/chat', async (req, res) => {
   const { sessionId, message } = req.body;
 
@@ -276,26 +276,41 @@ app.post('/api/chat', async (req, res) => {
     content: message
   });
 
+  // Set up SSE headers for streaming
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
   try {
-    const response = await anthropic.messages.create({
+    let fullMessage = '';
+
+    const stream = await anthropic.messages.stream({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: session.messages
     });
 
-    const assistantMessage = response.content[0].text;
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        const text = event.delta.text;
+        fullMessage += text;
+        res.write(`data: ${JSON.stringify({ text })}\n\n`);
+      }
+    }
 
     // Add assistant response to history
     session.messages.push({
       role: 'assistant',
-      content: assistantMessage
+      content: fullMessage
     });
 
-    res.json({ message: assistantMessage });
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
   } catch (error) {
     console.error('Anthropic API error:', error);
-    res.status(500).json({ error: 'Failed to get response from AI' });
+    res.write(`data: ${JSON.stringify({ error: 'Failed to get response from AI' })}\n\n`);
+    res.end();
   }
 });
 
