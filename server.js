@@ -10,13 +10,19 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static('public'));
 
-// Debug: log if API key is present (not the actual key)
-console.log('ANTHROPIC_API_KEY present:', !!process.env.ANTHROPIC_API_KEY);
-console.log('ANTHROPIC_API_KEY length:', process.env.ANTHROPIC_API_KEY?.length || 0);
-console.log('ANTHROPIC_API_KEY starts with:', process.env.ANTHROPIC_API_KEY?.substring(0, 10) || 'undefined');
+// Debug: log API key details
+const apiKey = process.env.ANTHROPIC_API_KEY;
+console.log('ANTHROPIC_API_KEY present:', !!apiKey);
+console.log('ANTHROPIC_API_KEY length:', apiKey?.length || 0);
+console.log('ANTHROPIC_API_KEY starts with:', apiKey?.substring(0, 12) || 'undefined');
+console.log('ANTHROPIC_API_KEY type:', typeof apiKey);
+
+if (!apiKey || apiKey.trim() === '') {
+  console.error('ERROR: ANTHROPIC_API_KEY is empty or not set!');
+}
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: apiKey,
 });
 
 // Email transporter configuration
