@@ -314,7 +314,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// Get initial greeting
+// Get initial greeting with streaming
 app.post('/api/greeting', async (req, res) => {
   const { sessionId } = req.body;
 
@@ -324,26 +324,41 @@ app.post('/api/greeting', async (req, res) => {
 
   const session = sessions.get(sessionId);
 
+  // Set up SSE headers for streaming
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
   try {
-    const response = await anthropic.messages.create({
+    let fullMessage = '';
+
+    const stream = await anthropic.messages.stream({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: 'Hello, I want to submit a training request.' }]
     });
 
-    const assistantMessage = response.content[0].text;
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        const text = event.delta.text;
+        fullMessage += text;
+        res.write(`data: ${JSON.stringify({ text })}\n\n`);
+      }
+    }
 
     // Initialize conversation with the greeting exchange
     session.messages = [
       { role: 'user', content: 'Hello, I want to submit a training request.' },
-      { role: 'assistant', content: assistantMessage }
+      { role: 'assistant', content: fullMessage }
     ];
 
-    res.json({ message: assistantMessage });
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
   } catch (error) {
     console.error('Anthropic API error:', error);
-    res.status(500).json({ error: 'Failed to get greeting from AI' });
+    res.write(`data: ${JSON.stringify({ error: 'Failed to get greeting from AI' })}\n\n`);
+    res.end();
   }
 });
 

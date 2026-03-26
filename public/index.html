@@ -462,21 +462,41 @@
         sendBtn.disabled = false;
         input.focus();
 
-        // Show typing indicator
-        showTypingIndicator();
-
-        // Get initial greeting
+        // Get initial greeting with streaming
         const greetingResponse = await fetch('/api/greeting', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId })
         });
 
-        hideTypingIndicator();
+        // Create message element for streaming greeting
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message assistant';
+        messagesDiv.appendChild(messageDiv);
 
-        const greetingData = await greetingResponse.json();
-        if (greetingData.message) {
-          addMessage(greetingData.message, 'assistant');
+        let fullGreeting = '';
+        const reader = greetingResponse.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.text) {
+                  fullGreeting += data.text;
+                  messageDiv.textContent = fullGreeting;
+                  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
+              } catch (e) {}
+            }
+          }
         }
       } catch (error) {
         console.error('Error starting new request:', error);
