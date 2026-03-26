@@ -10,6 +10,17 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static('public'));
 
+// Debug endpoint - list all env var names (not values)
+app.get('/api/debug-env', (req, res) => {
+  const envVarNames = Object.keys(process.env).sort();
+  const hasAnthropicKey = 'ANTHROPIC_API_KEY' in process.env;
+  res.json({
+    totalVars: envVarNames.length,
+    hasAnthropicKey,
+    varNames: envVarNames
+  });
+});
+
 // Debug: log API key details
 const apiKey = process.env.ANTHROPIC_API_KEY;
 console.log('ANTHROPIC_API_KEY present:', !!apiKey);
