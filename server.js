@@ -10,6 +10,11 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static('public'));
 
+// Debug: log if API key is present (not the actual key)
+console.log('ANTHROPIC_API_KEY present:', !!process.env.ANTHROPIC_API_KEY);
+console.log('ANTHROPIC_API_KEY length:', process.env.ANTHROPIC_API_KEY?.length || 0);
+console.log('ANTHROPIC_API_KEY starts with:', process.env.ANTHROPIC_API_KEY?.substring(0, 10) || 'undefined');
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
