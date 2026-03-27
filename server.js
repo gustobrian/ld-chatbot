@@ -15,6 +15,59 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Check if error is an overload error
+function isOverloadedError(error) {
+  return error?.error?.error?.type === 'overloaded_error' ||
+         error?.message?.includes('Overloaded');
+}
+
+// Retry helper with exponential backoff
+async function withRetry(fn, maxRetries = 3, baseDelay = 1000) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (!isOverloadedError(error) || attempt === maxRetries) {
+        throw error;
+      }
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.log(`API overloaded, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
+// Stream with retry - collects full response then streams to client
+async function streamWithRetry(res, messages, system, maxRetries = 3, baseDelay = 1000) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const stream = anthropic.messages.stream({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system,
+        messages
+      });
+
+      let fullMessage = '';
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          const text = event.delta.text;
+          fullMessage += text;
+          res.write(`data: ${JSON.stringify({ text })}\n\n`);
+        }
+      }
+      return fullMessage;
+    } catch (error) {
+      if (!isOverloadedError(error) || attempt === maxRetries) {
+        throw error;
+      }
+      const delay = baseDelay * Math.pow(2, attempt);
+      console.log(`API overloaded, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
 // Email transporter configuration
 const emailTransporter = nodemailer.createTransport({
   service: 'gmail',
@@ -93,9 +146,10 @@ COMMUNICATION STYLE
 CONVERSATION PROCESS — follow these phases in order:
 1. Greet the requestor and set expectations (~10-15 min conversation)
 2. Understand the business problem or performance trigger before discussing solutions
-3. Determine whether training is the right intervention
-4. Understand the target audience
-5. Ask questions related to the business impact of the training program:
+3. After gathering initial information about the business problem, warmly ask for the requestor's name (e.g., "By the way, I'd love to know who I'm chatting with — what's your name?"). Use their name naturally throughout the rest of the conversation.
+4. Determine whether training is the right intervention
+5. Understand the target audience
+6. Ask questions related to the business impact of the training program:
    - Compliance / Regulatory Risk
    - Customer Impact
    - Nature of Work
@@ -108,15 +162,15 @@ CONVERSATION PROCESS — follow these phases in order:
    - Feasibility
    - Content Readiness
    - Sponsorship & Alignment
-6. Ask the requestor: "Before we propose new development, have you checked for existing resources — like IKB articles, Academy modules, job aids, or team documentation — that might already cover this topic? If so, what did you find?" Use their response to inform whether to build new content or adapt existing materials.
-7. Carefully describe to the requestor what you have determined to be the best approach to their request; it might be just a training solution (suggest a modality or blend of modalities), training + solutions to other root causes, or just solutions to the root causes without training. If the request is for training on a new product or other net new information, then training is likely required.
-8. Ask if they would like to go ahead with the project as described.
-9. Calculate the prioritization level of the project and share the "likely" level with the requestor.
-10. Say, "Thank you for your request. The CX Learning & Development team will get in touch with you shortly to follow up."
-11. Create a training design document for the request.
-12. Notify the CX L&D team via email of (a) the request, (b) the prioritization level and calculation, and (c) the design document.
+7. Ask the requestor: "Before we propose new development, have you checked for existing resources — like IKB articles, Academy modules, job aids, or team documentation — that might already cover this topic? If so, what did you find?" Use their response to inform whether to build new content or adapt existing materials.
+8. Carefully describe to the requestor what you have determined to be the best approach to their request; it might be just a training solution (suggest a modality or blend of modalities), training + solutions to other root causes, or just solutions to the root causes without training. If the request is for training on a new product or other net new information, then training is likely required.
+9. Ask if they would like to go ahead with the project as described.
+10. Calculate the prioritization level of the project and share the "likely" level with the requestor.
+11. Say, "Thank you for your request. The CX Learning & Development team will get in touch with you shortly to follow up."
+12. Create a training design document for the request.
+13. Notify the CX L&D team via email of (a) the request, (b) the prioritization level and calculation, and (c) the design document.
 
-PHASE 5b — PRIORITIZATION SCORING
+PHASE 6b — PRIORITIZATION SCORING
 Ask the following 4 questions explicitly, one at a time, woven naturally into conversation. Score the remaining 8 variables silently from what you have already heard. Score Feasibility yourself based on the full conversation.
 
 == EXPLICIT QUESTIONS ==
@@ -188,7 +242,7 @@ Strategic Alignment (weight x3) — infer from Phase 2:
   5 = Explicitly on the CX Roadmap AND tied to a critical strategic bet with measurable business impact.
 Tip: Push past vague claims. "It's important for CX" alone is a 1–2. Look for specific named bets or roadmap items.
 
-Time Criticality (weight x3) — infer from Phase 5:
+Time Criticality (weight x3) — infer from Phase 6:
   1 = No deadline. Can be delivered whenever capacity allows.
   2 = Soft preference. No consequences if delayed.
   3 = Soft deadline within 6 months. Some urgency, flexibility exists.
@@ -203,7 +257,7 @@ Business Value (weight x2) — infer from Phase 2:
   4 = Significant risk reduction (escalations, churn) or revenue protection.
   5 = Major business value: significant ARR, major churn avoidance, or material reduction in high-cost incidents.
 
-Audience Reach & Scope (weight x2) — infer from Phase 3:
+Audience Reach & Scope (weight x2) — infer from Phase 5:
   1 = Fewer than 10 people on a single team.
   2 = 10–25 people, mostly one team.
   3 = 25–50 people across one CX pillar.
@@ -282,22 +336,7 @@ app.post('/api/chat', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    let fullMessage = '';
-
-    const stream = await anthropic.messages.stream({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: session.messages
-    });
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        const text = event.delta.text;
-        fullMessage += text;
-        res.write(`data: ${JSON.stringify({ text })}\n\n`);
-      }
-    }
+    const fullMessage = await streamWithRetry(res, session.messages, SYSTEM_PROMPT);
 
     // Add assistant response to history
     session.messages.push({
@@ -329,23 +368,10 @@ app.post('/api/greeting', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
+  const greetingMessage = [{ role: 'user', content: 'Hello, I want to submit a training request.' }];
+
   try {
-    let fullMessage = '';
-
-    const stream = await anthropic.messages.stream({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: 'Hello, I want to submit a training request.' }]
-    });
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        const text = event.delta.text;
-        fullMessage += text;
-        res.write(`data: ${JSON.stringify({ text })}\n\n`);
-      }
-    }
+    const fullMessage = await streamWithRetry(res, greetingMessage, SYSTEM_PROMPT);
 
     // Initialize conversation with the greeting exchange
     session.messages = [
@@ -392,14 +418,14 @@ app.post('/api/generate-document', async (req, res) => {
 Format the document professionally with clear section headers. Use markdown formatting for readability.`;
 
   try {
-    const response = await anthropic.messages.create({
+    const response = await withRetry(() => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
       messages: [
         ...session.messages,
         { role: 'user', content: documentPrompt }
       ]
-    });
+    }));
 
     const document = response.content[0].text;
 
