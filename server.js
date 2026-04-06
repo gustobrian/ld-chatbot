@@ -80,10 +80,10 @@ const emailTransporter = nodemailer.createTransport({
 // Send email notification
 async function sendEmailNotification(document, priorityTier) {
   const priorityColors = {
-    P0: '#dc3545',
-    P1: '#fd7e14',
-    P2: '#2989d8',
-    P3: '#6c757d'
+    P0: '#f45d48',
+    P1: '#e8b23c',
+    P2: '#0a8080',
+    P3: '#666666'
   };
 
   const mailOptions = {
@@ -91,8 +91,8 @@ async function sendEmailNotification(document, priorityTier) {
     to: process.env.NOTIFICATION_EMAIL,
     subject: `[${priorityTier}] New Training Design Request`,
     html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #1e5799 0%, #2989d8 100%); color: white; padding: 20px 24px; border-radius: 8px 8px 0 0;">
+      <div style="font-family: 'G Centra', -apple-system, BlinkMacSystemFont, sans-serif; max-width: 800px; margin: 0 auto;">
+        <div style="background: #0a8080; color: white; padding: 20px 24px; border-radius: 8px 8px 0 0;">
           <h1 style="margin: 0; font-size: 1.25rem;">New Training Design Request</h1>
         </div>
         <div style="padding: 24px; border: 1px solid #e0e6ed; border-top: none; border-radius: 0 0 8px 8px;">
@@ -101,7 +101,7 @@ async function sendEmailNotification(document, priorityTier) {
               Priority: ${priorityTier}
             </span>
           </div>
-          <div style="white-space: pre-wrap; line-height: 1.6; color: #1a1a2e;">
+          <div style="white-space: pre-wrap; line-height: 1.6; color: #222525;">
 ${document}
           </div>
         </div>

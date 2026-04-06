@@ -12,21 +12,33 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background-color: #f0f4f8;
+      font-family: 'G Centra', sans-serif;
+      background-color: #f5f5f5;
+      color: #222525;
       height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
     .header {
-      background: linear-gradient(135deg, #1e5799 0%, #2989d8 50%, #207cca 100%);
+      background: #0a8080;
       color: white;
       padding: 16px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo {
+      height: 36px;
+      width: auto;
     }
 
     .header h1 {
@@ -62,12 +74,13 @@
     }
 
     .header-btn.generate-btn {
-      background: rgba(76, 175, 80, 0.3);
-      border-color: rgba(76, 175, 80, 0.6);
+      background: #f45d48;
+      border-color: #f45d48;
     }
 
     .header-btn.generate-btn:hover:not(:disabled) {
-      background: rgba(76, 175, 80, 0.5);
+      background: #d94d3a;
+      border-color: #d94d3a;
     }
 
     .chat-container {
@@ -105,22 +118,22 @@
     }
 
     .message.user {
-      background: #2989d8;
+      background: #f45d48;
       color: white;
       align-self: flex-end;
       border-bottom-right-radius: 4px;
     }
 
     .message.assistant {
-      background: #f0f4f8;
-      color: #1a1a2e;
+      background: rgba(10, 128, 128, 0.1);
+      color: #222525;
       align-self: flex-start;
       border-bottom-left-radius: 4px;
     }
 
     .message.typing {
-      background: #f0f4f8;
-      color: #666;
+      background: rgba(10, 128, 128, 0.1);
+      color: #222525;
       align-self: flex-start;
     }
 
@@ -133,7 +146,7 @@
     .typing-indicator span {
       width: 8px;
       height: 8px;
-      background: #2989d8;
+      background: #0a8080;
       border-radius: 50%;
       animation: bounce 1.4s infinite ease-in-out;
     }
@@ -166,7 +179,7 @@
     }
 
     .input-container input:focus {
-      border-color: #2989d8;
+      border-color: #0a8080;
     }
 
     .input-container input:disabled {
@@ -174,7 +187,7 @@
     }
 
     .send-btn {
-      background: #2989d8;
+      background: #f45d48;
       color: white;
       border: none;
       padding: 12px 24px;
@@ -186,22 +199,22 @@
     }
 
     .send-btn:hover:not(:disabled) {
-      background: #1e5799;
+      background: #d94d3a;
     }
 
     .send-btn:disabled {
-      background: #a0c4e8;
+      background: rgba(244, 93, 72, 0.4);
       cursor: not-allowed;
     }
 
     .welcome-message {
       text-align: center;
-      color: #666;
+      color: #222525;
       padding: 40px;
     }
 
     .welcome-message h2 {
-      color: #2989d8;
+      color: #0a8080;
       margin-bottom: 8px;
     }
 
@@ -244,7 +257,7 @@
 
     .modal-header h2 {
       font-size: 1.25rem;
-      color: #1a1a2e;
+      color: #222525;
     }
 
     .priority-badge {
@@ -255,10 +268,10 @@
       color: white;
     }
 
-    .priority-badge.P0 { background: #dc3545; }
-    .priority-badge.P1 { background: #fd7e14; }
-    .priority-badge.P2 { background: #2989d8; }
-    .priority-badge.P3 { background: #6c757d; }
+    .priority-badge.P0 { background: #f45d48; }
+    .priority-badge.P1 { background: #e8b23c; }
+    .priority-badge.P2 { background: #0a8080; }
+    .priority-badge.P3 { background: #666666; }
 
     .email-status {
       font-size: 0.75rem;
@@ -298,7 +311,7 @@
     .document-content {
       font-size: 0.95rem;
       line-height: 1.7;
-      color: #1a1a2e;
+      color: #222525;
     }
 
     .document-content h1,
@@ -306,7 +319,7 @@
     .document-content h3 {
       margin-top: 24px;
       margin-bottom: 12px;
-      color: #1e5799;
+      color: #0a8080;
     }
 
     .document-content h1:first-child,
@@ -338,7 +351,7 @@
     }
 
     .document-content th {
-      background: #f0f4f8;
+      background: rgba(10, 128, 128, 0.1);
       font-weight: 600;
     }
 
@@ -364,29 +377,32 @@
     }
 
     .modal-btn.primary {
-      background: #2989d8;
+      background: #f45d48;
       color: white;
       border: none;
     }
 
     .modal-btn.primary:hover {
-      background: #1e5799;
+      background: #d94d3a;
     }
 
     .modal-btn.secondary {
       background: white;
-      color: #2989d8;
-      border: 1px solid #2989d8;
+      color: #0a8080;
+      border: 1px solid #0a8080;
     }
 
     .modal-btn.secondary:hover {
-      background: #f0f4f8;
+      background: rgba(10, 128, 128, 0.1);
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>L&D Training Request Assistant</h1>
+    <div class="header-left">
+      <img src="/gusto-logo.png" alt="Gusto" class="header-logo">
+      <h1>L&D Training Request Assistant</h1>
+    </div>
     <div class="header-buttons">
       <button class="header-btn generate-btn" id="generateBtn" onclick="generateDocument()" disabled>
         Generate Design Document
