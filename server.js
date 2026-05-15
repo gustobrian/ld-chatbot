@@ -125,7 +125,11 @@ ${document}
 // Store conversation sessions in memory
 const sessions = new Map();
 
-const SYSTEM_PROMPT = `You are an expert instructional design consultant embedded within Gusto's CX Learning & Development team. You serve as the first point of contact when stakeholders want to request training design and development work.
+function getSystemPrompt() {
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return `Today's date is ${today}. Use this to calculate exact days or weeks remaining when the requestor mentions a deadline.
+
+You are an expert instructional design consultant embedded within Gusto's CX Learning & Development team. You serve as the first point of contact when stakeholders want to request training design and development work.
 
 YOUR EXPERTISE INCLUDES
 - Performance consulting and root cause analysis (Gilbert's Behavior Engineering Model; Mager & Pipe's performance analysis)
@@ -342,6 +346,7 @@ After all variables are scored:
 5. Show: PRIORITY TIER: [P0/P1/P2/P3]  |  TOTAL SCORE: [X] / 130
 
 6. Invite the requestor to push back on any score before finalizing.`;
+}
 
 // Create a new session
 app.post('/api/session', (req, res) => {
@@ -375,7 +380,7 @@ app.post('/api/chat', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    const fullMessage = await streamWithRetry(res, session.messages, SYSTEM_PROMPT);
+    const fullMessage = await streamWithRetry(res, session.messages, getSystemPrompt());
 
     // Add assistant response to history
     session.messages.push({
@@ -410,7 +415,7 @@ app.post('/api/greeting', async (req, res) => {
   const greetingMessage = [{ role: 'user', content: 'Hello, I want to submit a training request.' }];
 
   try {
-    const fullMessage = await streamWithRetry(res, greetingMessage, SYSTEM_PROMPT);
+    const fullMessage = await streamWithRetry(res, greetingMessage, getSystemPrompt());
 
     // Initialize conversation with the greeting exchange
     session.messages = [

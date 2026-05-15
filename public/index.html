@@ -456,6 +456,8 @@
     let sessionId = null;
     let isWaiting = false;
     let documentText = '';
+    let documentPriorityTier = null;
+    let documentEmailSent = false;
 
     async function startNewRequest() {
       const messagesDiv = document.getElementById('messages');
@@ -466,6 +468,9 @@
       // Clear messages and reset state
       messagesDiv.innerHTML = '';
       generateBtn.disabled = true;
+      documentText = '';
+      documentPriorityTier = null;
+      documentEmailSent = false;
 
       // Create new session
       try {
@@ -642,6 +647,12 @@
     }
 
     async function generateDocument() {
+      // If document already generated, just re-open the modal
+      if (documentText) {
+        showModal(documentText, documentPriorityTier, documentEmailSent);
+        return;
+      }
+
       const generateBtn = document.getElementById('generateBtn');
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
@@ -657,7 +668,9 @@
 
         if (data.document) {
           documentText = data.document;
-          showModal(data.document, data.priorityTier, data.emailSent);
+          documentPriorityTier = data.priorityTier;
+          documentEmailSent = data.emailSent;
+          showModal(documentText, documentPriorityTier, documentEmailSent);
         } else {
           alert('Failed to generate document. Please try again.');
         }
